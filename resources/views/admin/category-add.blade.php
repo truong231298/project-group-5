@@ -87,7 +87,7 @@
                 }
             });
 
-            $("input[name = 'name']").on("change", function () {
+            $("input[name = 'name']").on("change", function (key, val) {
                 $("input[name = 'slug']").val(StringToSlug($(this).val()));
             })
         });

@@ -64,18 +64,18 @@
                             </tr>
                             </thead>
                             <tbody>
-                            @foreach ($categories as $categories)
+                            @foreach ($categories as $category)
                                 <tr>
-                                    <td>{{$categories->id}}</td>
+                                    <td>{{$category->id}}</td>
                                     <td class="pname">
                                         <div class="image">
-                                            <img src="{{asset('uploads/categories')}}/{{$categories->image}}" alt="{{$categories->name}}" class="image">
+                                            <img src="{{asset('uploads/categories')}}/{{$category->image}}" alt="{{$category->name}}" class="image">
                                         </div>
                                         <div class="name">
-                                            <a href="#" class="body-title-2">{{$categories->name}}</a>
+                                            <a href="#" class="body-title-2">{{$category->name}}</a>
                                         </div>
                                     </td>
-                                    <td>{{$categories->slug}}</td>
+                                    <td>{{$category->slug}}</td>
                                     <td><a href="#"
                                            target="_blank">0</a></td>
                                     <td>
@@ -85,7 +85,7 @@
                                                     <i class="icon-edit-3"></i>
                                                 </div>
                                             </a>
-                                            <form action="{{route('admin.category.delete', ['id' => $category->id])}}" method="POST">
+                                            <form action="{{route('admin.category.delete', ['id'=>$category->id])}}" method="POST">
                                                 @csrf
                                                 @method('DELETE')
                                                 <div class="item text-danger delete">
@@ -110,6 +110,28 @@
     </div>
 @endsection
 
+@push('scripts')
+    <script>
+        $(function (){
+            $('.delete').on('click', function (e){
+                e.preventDefault();
+                var form = $(this).closest('form');
+                swal({
+                        title: 'Are you sure',
+                        text: 'you want to delete this record?',
+                        type: 'warning',
+                        buttons : ['NO', 'YES'],
+                        confirmButtonColor: '$dc3545'
+                    }
+                ).then(function (result) {
+                    if(result){
+                        form.submit();
+                    }
+                })
+            })
+        });
+    </script>
+@endpush
 @push('scripts')
     <script>
         $(function (){

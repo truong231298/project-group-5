@@ -280,7 +280,7 @@
                             <div class="swiper-wrapper">
                                 <div class="swiper-slide product-card product-card_style3">
                                     <div class="pc__img-wrapper">
-                                        <a href="details.html">
+                                        <a href="detail.html">
                                             <img loading="lazy" src="{{asset('assets/images/home/demo3/product-0-1.jpg')}}"
                                                 width="258" height="313" alt="Cropped Faux leather Jacket"
                                                 class="pc__img">
@@ -291,7 +291,7 @@
                                     </div>
 
                                     <div class="pc__info position-relative">
-                                        <h6 class="pc__title"><a href="details.html">Cropped Faux Leather Jacket</a>
+                                        <h6 class="pc__title"><a href="detail.html">Cropped Faux Leather Jacket</a>
                                         </h6>
                                         <div class="product-card__price d-flex">
                                             <span class="money price text-secondary">$29</span>
@@ -324,7 +324,7 @@
                                 </div>
                                 <div class="swiper-slide product-card product-card_style3">
                                     <div class="pc__img-wrapper">
-                                        <a href="details.html">
+                                        <a href="detail.html">
                                             <img loading="lazy" src="{{asset('assets/images/home/demo3/product-1-1.jpg')}}"
                                                 width="258" height="313" alt="Cropped Faux leather Jacket"
                                                 class="pc__img">
@@ -675,7 +675,7 @@
                 <div class="col-6 col-md-4 col-lg-3">
                     <div class="product-card product-card_style3 mb-3 mb-md-4 mb-xxl-5">
                         <div class="pc__img-wrapper">
-                            <a href="details.html">
+                            <a href="details.html}">
                                 <img loading="lazy" src="{{asset('assets/images/home/demo3/product-4.jpg ')}}"width="330"
                                     height="400" alt="Cropped Faux leather Jacket" class="pc__img">
                             </a>
