@@ -5,9 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Coupon;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Slide;
+use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 use Intervention\Image\Laravel\Facades\Image;
@@ -16,7 +21,52 @@ class AdminController extends Controller
 {
     public function index()
     {
-        return view("admin.index");
+        $orders = Order::orderBy('id', 'desc')->get()->take(10);
+        $dashboardDatas = DB::select("SELECT
+                                                SUM(total) AS TotalAmount,
+                                                SUM(IF(status = 'ordered', total, 0)) AS TotalOrderedAmount,
+                                                SUM(IF(status = 'delivered', total, 0)) AS TotalDeliveredAmount,
+                                                SUM(IF(status = 'canceled', total, 0)) AS TotalCanceledAmount,
+                                                COUNT(*) AS Total,
+                                                SUM(IF(status = 'ordered', 1, 0)) AS TotalOrdered,
+                                                SUM(IF(status = 'delivered', 1, 0)) AS TotalDelivered,
+                                                SUM(IF(status = 'canceled', 1, 0)) AS TotalCanceled
+                                            FROM orders
+                                            ");
+
+        $monthlyDatas = DB::select("SELECT
+                                                M.id AS MonthNo,
+                                                M.Name AS MonthName,
+                                                IFNULL(D.TotalAmount, 0) AS TotalAmount,
+                                                IFNULL(D.TotalOrderedAmount, 0) AS TotalOrderedAmount,
+                                                IFNULL(D.TotalDeliveredAmount, 0) AS TotalDeliveredAmount,
+                                                IFNULL(D.TotalCanceled, 0) AS TotalCanceledAmount
+                                            FROM month_names AS M
+                                            LEFT JOIN (
+                                                SELECT
+                                                    MONTH(created_at) AS MonthNo,
+                                                    SUM(total) AS TotalAmount,
+                                                    SUM(IF(status = 'ordered', total, 0)) AS TotalOrderedAmount,
+                                                    SUM(IF(status = 'delivered', total, 0)) AS TotalDeliveredAmount,
+                                                    SUM(IF(status = 'canceled', total, 0)) AS TotalCanceled
+                                                FROM Orders
+                                                WHERE YEAR(created_at) = YEAR(NOW())
+                                                GROUP BY YEAR(created_at), MONTH(created_at), DATE_FORMAT(created_at, '%b')
+                                                ORDER BY MONTH(created_at)
+                                            ) D ON D.MonthNo = M.id;
+                                            ");
+
+        $AmountM = implode(',',collect($monthlyDatas)->pluck('TotalAmount')->toArray());
+        $OrderedAmountM = implode(',',collect($monthlyDatas)->pluck('TotalOrderedAmount')->toArray());
+        $DeliveredAmountM = implode(',',collect($monthlyDatas)->pluck('TotalDeliveredAmount')->toArray());
+        $CanceledAmountM = implode(',',collect($monthlyDatas)->pluck('TotalCanceledAmount')->toArray());
+
+        $TotalAmount = collect($monthlyDatas)->sum('TotalAmount');
+        $TotalOrderedAmount = collect($monthlyDatas)->sum('TotalOrderedAmount');
+        $TotalDeliveredAmount = collect($monthlyDatas)->sum('TotalDeliveredAmount');
+        $TotalCanceledAmount = collect($monthlyDatas)->sum('TotalCanceledAmount');
+
+        return view("admin.index", compact("orders", "dashboardDatas", "AmountM", "OrderedAmountM", "DeliveredAmountM", "CanceledAmountM", "TotalAmount", "TotalOrderedAmount", "TotalDeliveredAmount", "TotalCanceledAmount"));
     }
 
     public function brands()
@@ -437,4 +487,129 @@ class AdminController extends Controller
         return redirect()->route('admin.coupons')->with('status','Coupon deleted successfully');
     }
 
+    public function orders()
+    {
+        $orders = Order::orderBy('created_at','DESC')->paginate(12);
+        return view("admin.orders",compact('orders'));
+    }
+
+    public function order_details($order_id)
+    {
+        $order = Order::find($order_id);
+        $orderItems = OrderItem::where('order_id',$order_id)->orderBy('id')->paginate(12);
+        $transaction = Transaction::where('order_id',$order_id)->first();
+        return view("admin.order-details",compact('order','orderItems','transaction'));
+    }
+
+    public function update_order_status(Request $request)
+    {
+        $order = Order::find($request->order_id);
+        $order->status = $request->order_status;
+        if($request->order_status == 'delivered'){
+            $order->delivered_date = Carbon::now();
+        }else if ($request->order_status == 'canceled'){
+            $order->canceled_date = Carbon::now();
+        }
+
+        $order->save();
+        if($request->order_status == 'delivered'){
+            $transaction = Transaction::where('order_id', $request->order_id)->first();
+            $transaction->status = 'approved';
+            $transaction->save();
+        }
+        return back()->with('status','Order status updated successfully');
+    }
+
+    public function slides()
+    {
+        $slides = Slide::orderBy('id','DESC')->paginate(12);
+        return view("admin.slides",compact('slides'));
+    }
+
+    public function slide_add()
+    {
+        return view("admin.slide-add");
+    }
+
+    public function slide_store(Request $request)
+    {
+        $request->validate([
+            'tagline'=>'required',
+            'title'=>'required',
+            'subtitle'=>'required',
+            'link'=>'required',
+            'status'=>'required',
+            'image'=>'required|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+        $slide = new Slide();
+        $slide->tagline = $request->tagline;
+        $slide->title = $request->title;
+        $slide->subtitle = $request->subtitle;
+        $slide->link = $request->link;
+        $slide->status = $request->status;
+
+        $image = $request->file('image');
+        $file_extention = $request->file('image')->extension();
+        $file_name = Carbon::now()->timestamp.'.'.$file_extention;
+        $this->GenerateSlideThumbailsImage($image,$file_name);
+        $slide->image = $file_name;
+        $slide->save();
+        return redirect()->route('admin.slides')->with('status','Slide added successfully');
+    }
+
+    public function GenerateSlideThumbailsImage($image,$imageName){
+        $destinationPath = public_path('uploads/slides');
+        $img = Image::read($image->path());
+        $img->cover(400, 690, "top");
+        $img->resize(400, 690, function ($constrain){
+            $constrain->aspectRatio();
+        }) -> save($destinationPath.'/'.$imageName);
+    }
+
+    public function slide_edit($id){
+        $slide = Slide::find($id);
+        return view('admin.slide-edit',compact('slide'));
+    }
+
+    public function slide_update(Request $request)
+    {
+        $request->validate([
+            'tagline'=>'required',
+            'title'=>'required',
+            'subtitle'=>'required',
+            'link'=>'required',
+            'status'=>'required',
+            'image'=>'mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+        $slide = Slide::find($request->id);
+        $slide->tagline = $request->tagline;
+        $slide->title = $request->title;
+        $slide->subtitle = $request->subtitle;
+        $slide->link = $request->link;
+        $slide->status = $request->status;
+
+        if($request->hasFile('image')){
+            if(File::exists(public_path('uploads/slides').'/'.$slide->image)){
+                File::delete(public_path('uploads/slides').'/'.$slide->image);
+            }
+            $image = $request->file('image');
+            $file_extention = $request->file('image')->extension();
+            $file_name = Carbon::now()->timestamp.'.'.$file_extention;
+            $this->GenerateSlideThumbailsImage($image,$file_name);
+            $slide->image = $file_name;
+        }
+
+        $slide->save();
+        return redirect()->route('admin.slides')->with('status','Slide updated successfully');
+    }
+
+    public function slide_delete($id)
+    {
+        $slide = Slide::find($id);
+        if(File::exists(public_path('uploads/slides').'/'.$slide->image)){
+            File::delete(public_path('uploads/slides').'/'.$slide->image);
+        }
+        $slide->delete();
+        return redirect()->route('admin.slides')->with('status','Slide deleted successfully');
+    }
 }
