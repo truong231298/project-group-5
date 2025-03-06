@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminSettingController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ShopController;
@@ -39,6 +40,8 @@ Route::get('/send-email', [App\Http\Controllers\MailController::class, 'sendMail
 Route::get('/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
 Route::post('/place-an-order', [CartController::class, 'place_an_order'])->name('cart.place.an.order');
 Route::get('/order-confirmation', [CartController::class, 'order_confirmation'])->name('cart.order.confirmation');
+
+Route::get('/search', [HomeController::class, 'search'])->name('home.search');
 
 Route::middleware(['auth'])->group(function(){
     Route::get('/account-dashboard',[UserController::class,'index'])->name('user.index');
@@ -88,6 +91,12 @@ Route::middleware(['auth', AuthAdmin::class])->group(function(){
     Route::put('/admin/slide/update',[AdminController::class,'slide_update'])->name('admin.slide.update');
     Route::delete('/admin/slide/{id}/delete',[AdminController::class,'slide_delete'])->name('admin.slide.delete');
 
+    Route::get('/admin/search',[AdminController::class,'search'])->name('admin.search');
+
+    Route::get('/admin/users', [AdminController::class, 'show_users'])->name('admin.users');
+
+    Route::get('/admin/settings', [AdminSettingController::class, 'index'])->name('admin.settings');
+    Route::post('/admin/settings/update', [AdminSettingController::class, 'update'])->name('admin.settings.update');
 
 });
 
