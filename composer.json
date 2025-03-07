@@ -11,6 +11,8 @@
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.6",
+        "srmklive/paypal": "^3.0",
+        "stripe/stripe-php": "^16.6",
         "surfsidemedia/shoppingcart": "^1.0"
     },
     "require-dev": {

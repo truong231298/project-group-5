@@ -622,7 +622,7 @@ class AdminController extends Controller
 
     public function show_users()
     {
-        $users = User::all(); // Lấy tất cả user từ database
+        $users = User::where('utype', 'USR')->withCount('orders')->get();
         return view('admin.users-index', compact('users'));
     }
 }

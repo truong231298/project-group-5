@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Srmklive\PayPal\Services\PayPal;
 use Surfsidemedia\Shoppingcart\Facades\Cart;
 
 class CartController extends Controller
@@ -170,12 +171,76 @@ class CartController extends Controller
             $orderItem->save();
         }
 
-        if($request-> mode == "card"){
-            //
+    if($request->mode == "card"){
+            // Set your Stripe secret key
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        try {
+            // Create a PaymentIntent with the order total (converted to cents)
+            $paymentIntent = \Stripe\PaymentIntent::create([
+                'amount' => Session::get('checkout')['total'] * 100, // amount in cents
+                'currency' => env('CURRENCY', 'usd'),
+                'metadata' => [
+                    'order_id' => $order->id,
+                ],
+            ]);
+
+            // Pass the PaymentIntent's client secret to the view
+            return view('payments.card', [
+                'clientSecret' => $paymentIntent->client_secret,
+                'order' => $order,
+            ]);
+        } catch (\Exception $e) {
+            // Handle any errors from Stripe
+            return redirect()->route('cart.order.confirmation')
+                ->with('error', 'Error processing payment: ' . $e->getMessage());
         }
-        elseif($request->mode == "paypal"){
-            //
+    }
+
+    elseif($request->mode == "paypal"){
+            // Create an instance of the PayPal client
+            $provider = new PayPal();
+
+            // Set API credentials from the config file
+            $provider->setApiCredentials(config('paypal'));
+            $token = $provider->getAccessToken();
+            $provider->setAccessToken($token);
+
+            // Create a new PayPal order with the total amount from your order
+            $response = $provider->createOrder([
+                "intent" => "CAPTURE",
+                "purchase_units" => [
+                    [
+                        "amount" => [
+                            "currency_code" => "USD", // Adjust the currency as needed
+                            "value" => $order->total
+                        ]
+                    ]
+                ],
+                "application_context" => [
+                    "cancel_url" => route('paypal.cancel'), // Define this route
+                    "return_url" => route('paypal.success') // Define this route for successful payment
+                ]
+            ]);
+
+            // Check if the PayPal order was created successfully
+            if(isset($response['id']) && $response['id'] != null){
+                // Redirect the user to PayPal for approval
+                foreach($response['links'] as $link){
+                    if($link['rel'] === 'approve'){
+                        return redirect()->away($link['href']);
+                    }
+                }
+                return redirect()
+                    ->route('cart.order.confirmation')
+                    ->with('error', 'Something went wrong with PayPal approval.');
+            } else {
+                return redirect()
+                    ->route('cart.order.confirmation')
+                    ->with('error', $response['message'] ?? 'Something went wrong with PayPal.');
+            }
         }
+
         elseif($request->mode == "cod"){
             $transaction = new Transaction();
             $transaction->user_id = $user_id;

@@ -44,38 +44,31 @@
                                 <th>Phone</th>
                                 <th>Email</th>
                                 <th class="text-center">Total Orders</th>
-                                <th>Action</th>
                             </tr>
                             </thead>
                             <tbody>
-{{--                            @foreach($users as $user)--}}
-{{--                                <tr>--}}
-{{--                                    <td>{{ $loop->iteration }}</td>--}}
-{{--                                    <td class="pname">--}}
-{{--                                        <div class="image">--}}
-{{--                                            <img src="{{ asset('uploads/users/' . $user->avatar) }}" alt="{{ $user->name }}" class="image">--}}
-{{--                                        </div>--}}
-{{--                                        <div class="name">--}}
-{{--                                            <a href="#" class="body-title-2">{{ $user->name }}</a>--}}
-{{--                                            <div class="text-tiny mt-3">{{ strtoupper($user->role) }}</div>--}}
-{{--                                        </div>--}}
-{{--                                    </td>--}}
-{{--                                    <td>{{ $user->phone ?? 'N/A' }}</td>--}}
-{{--                                    <td>{{ $user->email }}</td>--}}
-{{--                                    <td class="text-center">--}}
-{{--                                        <a href="#" target="_blank">{{ $user->orders->count() }}</a>--}}
-{{--                                    </td>--}}
-{{--                                </tr>--}}
-{{--                            @endforeach--}}
+                            @foreach($users as $user)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td class="pname">
+                                        <div class="image">
+                                            <img src="{{ asset('uploads/users/')}}/{{$user->avatar}}" alt="{{ $user->name }}" class="image">
+                                        </div>
+                                        <div class="name">
+                                            <a href="#" class="body-title-2">{{ $user->name }}</a>
+                                        </div>
+                                    </td>
+                                    <td>{{ $user->mobile}}</td>
+                                    <td>{{ $user->email }}</td>
+                                    <td class="text-center">
+                                        <a href="#" target="_blank">{{ $user->orders_count }}</a>
+                                    </td>
+                                </tr>
+                            @endforeach
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-                <div class="divider"></div>
-{{--                <div class="flex items-center justify-between flex-wrap gap10 wgp-pagination">--}}
-{{--                    {{ $users->links('pagination::boostrap-5') }}--}}
-{{--                </div>--}}
             </div>
         </div>
     </div>

@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AboutController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminSettingController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\WishlistController;
@@ -42,6 +44,14 @@ Route::post('/place-an-order', [CartController::class, 'place_an_order'])->name(
 Route::get('/order-confirmation', [CartController::class, 'order_confirmation'])->name('cart.order.confirmation');
 
 Route::get('/search', [HomeController::class, 'search'])->name('home.search');
+
+Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
+
+Route::get('/about', [AboutController::class, 'index'])->name('about.index');
+
+Route::get('/paypal/cancel', 'PaypalController@cancel')->name('paypal.cancel');
+Route::get('/paypal/success', 'PaypalController@success')->name('paypal.success');
+
 
 Route::middleware(['auth'])->group(function(){
     Route::get('/account-dashboard',[UserController::class,'index'])->name('user.index');
