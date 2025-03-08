@@ -52,7 +52,6 @@ Route::get('/about', [AboutController::class, 'index'])->name('about.index');
 Route::get('/paypal/cancel', 'PaypalController@cancel')->name('paypal.cancel');
 Route::get('/paypal/success', 'PaypalController@success')->name('paypal.success');
 
-
 Route::middleware(['auth'])->group(function(){
     Route::get('/account-dashboard',[UserController::class,'index'])->name('user.index');
     Route::get('/account-orders',[UserController::class,'orders'])->name('user.orders');
