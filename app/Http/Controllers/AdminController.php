@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\Rule;
 use Intervention\Image\Laravel\Facades\Image;
 
 class AdminController extends Controller
@@ -82,21 +83,38 @@ class AdminController extends Controller
 
     public function brand_store(Request $request){
         $request->validate([
-            'name'=>'required',
-            'slug'=>'required|unique:brands,slug',
-            'image'=>'mimes:jpeg,png,jpg|max:2048'
+            'name'  => 'required|unique:brands,name,' . $request->id . '|min:2|max:20',
+            'slug'  => 'required|unique:brands,slug,' . $request->id . '|regex:/^[a-z0-9-]+$/|min:2|max:20',
+            'image' => 'required|mimes:jpeg,png,jpg|max:2048'
+        ], [
+            'name.unique' => 'The name "' . $request->name . '" is already taken. Please choose another.',
+            'slug.unique' => 'The slug "' . $request->slug . '" is already taken. Please choose another.',
+            'slug.regex'  => 'The slug may only contain lowercase letters, numbers, and hyphens.',
         ]);
 
         $brand = new Brand();
         $brand->name = $request->name;
-        $brand->slug = Str::slug($request->name);
-        $image = $request->file('image');
-        $file_extention = $request->file('image')->extension();
-        $file_name = Carbon::now()->timestamp.'.'.$file_extention;
-        $this->GenerateBrandThumbailsImage($image,$file_name);
-        $brand->image = $file_name;
+
+        // Auto-generate a unique slug from the name
+        $slug = Str::slug($request->name);
+        $originalSlug = $slug;
+        $count = 1;
+        while (Brand::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $count;
+            $count++;
+        }
+        $brand->slug = $slug;
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $file_extention = $file->extension();
+            $file_name = Carbon::now()->timestamp . '.' . $file_extention;
+            $this->GenerateBrandThumbailsImage($file, $file_name);
+            $brand->image = $file_name;
+        }
+
         $brand->save();
-        return redirect()->route('admin.brands')->with('status','Brand added successfully');
+        return redirect()->route('admin.brands')->with('status', 'Brand added successfully');
     }
 
     public function brand_edit($id){
@@ -106,27 +124,51 @@ class AdminController extends Controller
 
     public function brand_update(Request $request){
         $request->validate([
-            'name'=>'required',
-            'slug'=>'required|unique:brands,slug',
-            'image'=>'mimes:jpeg,png,jpg|max:2048'
+            'name'  => 'required|unique:brands,name,' . $request->id . '|min:2|max:20',
+            'slug'  => 'nullable|unique:brands,slug,' . $request->id . '|regex:/^[a-z0-9-]+$/|min:2|max:20',
+            'image' => 'nullable|mimes:jpeg,png,jpg|max:2048'
+        ], [
+            'name.unique' => 'The brand name "' . $request->name . '" is already taken. Please choose another.',
+            'slug.unique' => 'The brand slug "' . ($request->slug ?? Str::slug($request->name)) . '" is already taken. Please choose another.',
+            'slug.regex'  => 'The slug may only contain lowercase letters, numbers, and hyphens.',
         ]);
 
+
         $brand = Brand::find($request->id);
+
+        // Assign the name directly as validation enforces uniqueness
         $brand->name = $request->name;
-        $brand->slug = Str::slug($request->name);
+
+        // Generate a slug from the name and adjust it if necessary
+        if ($request->filled('slug')) {
+            $slug = Str::slug($request->slug);
+        } else {
+            $slug = Str::slug($request->name);
+        }
+
+        $originalSlug = $slug;
+        $count = 1;
+        while (Brand::where('slug', $slug)->where('id', '!=', $brand->id)->exists()) {
+            $slug = $originalSlug . '-' . $count;
+            $count++;
+        }
+        $brand->slug = $slug;
+
+        // Process the image only if a new file is uploaded
         if($request->hasFile('image')){
-            if(File::exists(public_path('uploads/brands')."/".$brand->image)){
-                File::delete(public_path('uploads/brands').'/'.$brand->image);
+            // Delete the existing image if it exists
+            if(File::exists(public_path('uploads/brands') . "/" . $brand->image)){
+                File::delete(public_path('uploads/brands') . '/' . $brand->image);
             }
-            $image = $request->file('image');
-            $file_extention = $request->file('image')->extension();
-            $file_name = Carbon::now()->timestamp.'.'.$file_extention;
-            $this->GenerateBrandThumbailsImage($image,$file_name);
+            $file = $request->file('image');
+            $file_extention = $file->extension();
+            $file_name = Carbon::now()->timestamp . '.' . $file_extention;
+            $this->GenerateBrandThumbailsImage($file, $file_name);
             $brand->image = $file_name;
         }
 
         $brand->save();
-        return redirect()->route('admin.brands')->with('status','Brand added successfully');
+        return redirect()->route('admin.brands')->with('status', 'Brand updated successfully');
     }
 
     public function GenerateBrandThumbailsImage($image, $imageName){
@@ -157,21 +199,38 @@ class AdminController extends Controller
 
     public function category_store(Request $request){
         $request->validate([
-            'name'=>'required',
-            'slug'=>'required|unique:categories,slug',
-            'image'=>'mimes:jpeg,png,jpg|max:2048'
+            'name'  => 'required|unique:categories,name,' . $request->id . '|min:2|max:20',
+            'slug'  => 'required|unique:categories,slug,' . $request->id . '|regex:/^[a-z0-9-]+$/|min:2|max:20',
+            'image' => 'required|mimes:jpeg,png,jpg|max:2048'
+        ], [
+            'name.unique' => 'The name "' . $request->name . '" is already taken. Please choose another.',
+            'slug.unique' => 'The slug "' . $request->slug . '" is already taken. Please choose another.',
+            'slug.regex'  => 'The slug may only contain lowercase letters, numbers, and hyphens.',
         ]);
 
         $category = new Category();
         $category->name = $request->name;
-        $category->slug = Str::slug($request->name);
-        $image = $request->file('image');
-        $file_extention = $request->file('image')->extension();
-        $file_name = Carbon::now()->timestamp.'.'.$file_extention;
-        $this->GenerateCategoryThumbailsImage($image,$file_name);
-        $category->image = $file_name;
+
+        // Auto-generate a unique slug from the name
+        $slug = Str::slug($request->name);
+        $originalSlug = $slug;
+        $count = 1;
+        while (Category::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $count;
+            $count++;
+        }
+        $category->slug = $slug;
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $file_extention = $file->extension();
+            $file_name = Carbon::now()->timestamp . '.' . $file_extention;
+            $this->GenerateCategoryThumbailsImage($file, $file_name);
+            $category->image = $file_name;
+        }
+
         $category->save();
-        return redirect()->route('admin.categories')->with('status','Category added successfully');
+        return redirect()->route('admin.categories')->with('status', 'Category added successfully');
     }
 
     public function GenerateCategoryThumbailsImage($image,$imageName){
@@ -190,27 +249,50 @@ class AdminController extends Controller
 
     public function category_update(Request $request){
         $request->validate([
-            'name'=>'required',
-            'slug'=>'required|unique:categories,slug',
-            'image'=>'mimes:jpeg,png,jpg|max:2048'
+            'name'  => 'required|unique:categories,name,' . $request->id . '|min:2|max:20',
+            'slug'  => 'nullable|unique:categories,slug,' . $request->id . '|regex:/^[a-z0-9-]+$/|min:2|max:20',
+            'image' => 'nullable|mimes:jpeg,png,jpg|max:2048'
+        ], [
+            'name.unique' => 'The category name "' . $request->name . '" is already taken. Please choose another.',
+            'slug.unique' => 'The category slug "' . ($request->slug ?? Str::slug($request->name)) . '" is already taken. Please choose another.',
+            'slug.regex'  => 'The slug may only contain lowercase letters, numbers, and hyphens.',
         ]);
 
+
         $category = Category::find($request->id);
+
+        // Assign the name directly as validation enforces uniqueness
         $category->name = $request->name;
-        $category->slug = Str::slug($request->name);
+
+        // Generate a slug from the name and adjust it if necessary
+        if ($request->filled('slug')) {
+            $slug = Str::slug($request->slug);
+        } else {
+            $slug = Str::slug($request->name);
+        }
+        $originalSlug = $slug;
+        $count = 1;
+        while (Category::where('slug', $slug)->where('id', '!=', $category->id)->exists()) {
+            $slug = $originalSlug . '-' . $count;
+            $count++;
+        }
+        $category->slug = $slug;
+
+        // Process the image only if a new file is uploaded
         if($request->hasFile('image')){
-            if(File::exists(public_path('uploads/categories')."/".$category->image)){
-                File::delete(public_path('uploads/categories').'/'.$category->image);
+            // Delete the existing image if it exists
+            if(File::exists(public_path('uploads/categories') . "/" . $category->image)){
+                File::delete(public_path('uploads/categories') . '/' . $category->image);
             }
-            $image = $request->file('image');
-            $file_extention = $request->file('image')->extension();
-            $file_name = Carbon::now()->timestamp.'.'.$file_extention;
-            $this->GenerateCategoryThumbailsImage($image,$file_name);
+            $file = $request->file('image');
+            $file_extention = $file->extension();
+            $file_name = Carbon::now()->timestamp . '.' . $file_extention;
+            $this->GenerateCategoryThumbailsImage($file, $file_name);
             $category->image = $file_name;
         }
 
         $category->save();
-        return redirect()->route('admin.categories')->with('status','Category added successfully');
+        return redirect()->route('admin.categories')->with('status', 'Category updated successfully');
     }
 
     public function category_delete($id){
@@ -241,15 +323,20 @@ class AdminController extends Controller
             'slug'=>'required|unique:products,slug',
             'short_description'=>'required',
             'description'=>'required',
-            'regular_price'=>'required',
-            'sale_price'=>'required',
+            'regular_price' => 'required|numeric|min:0.01',
+            'sale_price' => 'nullable|numeric|gt:0|lt:regular_price', // Must be > 0 and < regular_price
             'SKU'=>'required',
             'stock_status'=>'required',
             'featured'=>'required',
-            'quantity'=>'required',
+            'quantity' => 'required|integer|min:1',
             'category_id'=>'required',
             'brand_id'=>'required',
             'image'=>'required|mimes:jpeg,png,jpg|max:2048'
+        ],[
+            'regular_price.min' => 'The regular price must be greater than 0.',
+            'sale_price.gt' => 'The sale price must be greater than 0.',
+            'sale_price.lt' => 'The sale price must be lower than the regular price.',
+            'quantity.min' => 'The quantity must be at least 1.',
         ]);
         $product = new Product();
         $product->name = $request->name;
@@ -312,32 +399,25 @@ class AdminController extends Controller
         }) -> save($destinationPathThumbnail.'/'.$imageName);
     }
 
-    public function product_edit($id)
+    public function product_update(Request $request, $id)
     {
-        $product = Product::find($id);
-        $categories = Category::select('id','name')->orderBy('name')->get();
-        $brands = Brand::select('id','name')->orderBy('name')->get();
-        return view("admin.product-edit",compact('product','categories','brands'));
-    }
-
-    public function product_update(Request $request){
         $request->validate([
-            'name'=>'required',
-            'slug'=>'required|unique:products,slug,'.$request->id,
-            'short_description'=>'required',
-            'description'=>'required',
-            'regular_price'=>'required',
-            'sale_price'=>'required',
-            'SKU'=>'required',
-            'stock_status'=>'required',
-            'featured'=>'required',
-            'quantity'=>'required',
-            'category_id'=>'required',
-            'brand_id'=>'required',
-            'image'=>'required|mimes:jpeg,png,jpg|max:2048'
-
+            'name' => 'required',
+            'slug' => 'required|unique:products,slug,' . $id,
+            'short_description' => 'required',
+            'description' => 'required',
+            'regular_price' => 'required|numeric|min:0.01',
+            'sale_price' => 'nullable|numeric|gt:0|lt:regular_price',
+            'SKU' => 'required',
+            'stock_status' => 'required',
+            'featured' => 'required',
+            'quantity' => 'required|integer|min:1',
+            'category_id' => 'required',
+            'brand_id' => 'required',
+            'image' => 'nullable|mimes:jpeg,png,jpg|max:2048'
         ]);
-        $product = Product::find($request->id);
+
+        $product = Product::findOrFail($id);
         $product->name = $request->name;
         $product->slug = Str::slug($request->name);
         $product->short_description = $request->short_description;
@@ -351,56 +431,15 @@ class AdminController extends Controller
         $product->category_id = $request->category_id;
         $product->brand_id = $request->brand_id;
 
-        $current_timestamp = Carbon::now()->timestamp;
-        if($request->hasFile('image')){
-            if(File::exists(public_path('uploads/products/').'/'.$product->image)){
-                File::delete(public_path('uploads/products/').'/'.$product->image);
-            }
-
-            if(File::exists(public_path('uploads/products/thumbnails/').'/'.$product->image)){
-                File::delete(public_path('uploads/products/thumbnails/').'/'.$product->image);
-            }
+        if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = $current_timestamp.'.'.$image->getClientOriginalExtension();
-            $this->GenrateProductThumbnailImage($image,$imageName);
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('uploads/products'), $imageName);
             $product->image = $imageName;
         }
 
-        $gallery_arr = array();
-        $gallery_image = '';
-        $counter = 1;
-
-        if($request->hasFile('images')){
-
-            foreach(explode(',',$product->images) as $ofile){
-                if(File::exists(public_path('uploads/products/').'/'.$ofile)){
-                    File::delete(public_path('uploads/products/').'/'.$ofile);
-                }
-
-                if(File::exists(public_path('uploads/products/thumbnails/').'/'.$ofile)){
-                    File::delete(public_path('uploads/products/thumbnails/').'/'.$ofile);
-                }
-            };
-            $allowedfileExtensions = array('jpg', 'png', 'gif');
-            $file = $request->file('images');
-            foreach($file as $file){
-                $filename = $file->getClientOriginalName();
-                $gextension = $file->getClientOriginalExtension();
-                $gcheck = in_array($gextension, $allowedfileExtensions);
-                if($gcheck){
-                    $gfileName = $current_timestamp.'-'.$counter.$gextension;
-                    $this->GenrateProductThumbnailImage($file,$gfileName);
-                    array_push($gallery_arr,$gfileName);
-                    $counter++;
-                }
-            }
-            $gallery_image = implode(',', $gallery_arr);
-            $product->images = $gallery_image;
-
-        }
-
         $product->save();
-        return redirect()->route('admin.products')->with('status','Product updated successfully');
+        return redirect()->route('admin.products')->with('status', 'Product updated successfully');
     }
 
     public function product_delete($id){

@@ -59,10 +59,12 @@
                                 <select class="" name="category_id">
                                     <option>Choose category</option>
                                     @foreach($categories as $category)
-                                    <option value="{{$category->id}}">{{$category->name}}</option>
+                                        <option value="{{$category->id}}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                            {{$category->name}}
+                                        </option>
                                     @endforeach
-
                                 </select>
+
                             </div>
                         </fieldset>
                         @error('category_id') <span class="alert alert-danger text-center">{{$message}}</span> @enderror
@@ -73,9 +75,12 @@
                                 <select class="" name="brand_id">
                                     <option>Choose Brand</option>
                                     @foreach($brands as $brand)
-                                    <option value="{{$brand->id}}">{{$brand->name}}</option>
+                                        <option value="{{$brand->id}}" {{ old('brand_id') == $brand->id ? 'selected' : '' }}>
+                                            {{$brand->name}}
+                                        </option>
                                     @endforeach
                                 </select>
+
                             </div>
                         </fieldset>
                         @error('brand_id') <span class="alert alert-danger text-center">{{$message}}</span> @enderror
@@ -90,7 +95,7 @@
                         <div class="text-tiny">Do not exceed 100 characters when entering the
                             product name.</div>
                     </fieldset>
-                    @error('short_description') <span class="alert alert-danger text-center">{{$message}}</span> @enderror
+
 
                     <fieldset class="description">
                         <div class="body-title mb-10">Description <span class="tf-color-1">*</span>
@@ -100,7 +105,7 @@
                         <div class="text-tiny">Do not exceed 100 characters when entering the
                             product name.</div>
                     </fieldset>
-                    @error('decription') <span class="alert alert-danger text-center">{{$message}}</span> @enderror
+
                 </div>
                 <div class="wg-box">
                     <fieldset>
@@ -156,13 +161,11 @@
                         </fieldset>
                         @error('regular_price') <span class="alert alert-danger text-center">{{$message}}</span> @enderror
                         <fieldset class="name">
-                            <div class="body-title mb-10">Sale Price <span
-                                    class="tf-color-1">*</span></div>
+                            <div class="body-title mb-10">Sale Price </div>
                             <input class="mb-10" type="text" placeholder="Enter sale price"
-                                   name="sale_price" tabindex="0" value="{{old('sale_price')}}" aria-required="true"
-                                   required="">
+                                   name="sale_price" tabindex="0" value="{{old('sale_price')}}" >
                         </fieldset>
-                        @error('sale_price') <span class="alert alert-danger text-center">{{$message}}</span> @enderror
+
                     </div>
 
 

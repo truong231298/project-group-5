@@ -77,7 +77,7 @@
                                 </td>
                                 <td>{{$brand->slug}}</td>
                                 <td><a href="#"
-                                        target="_blank">0</a></td>
+                                        target="_blank">{{$brand->products()->count()}}</a></td>
                                 <td>
                                     <div class="list-icon-function">
                                         <a href="{{route('admin.brand.edit', ['id'=>$brand->id])}}">
@@ -85,13 +85,13 @@
                                                 <i class="icon-edit-3"></i>
                                             </div>
                                         </a>
-                                        <form action="{{route('admin.brand.delete', ['id'=>$brand->id])}}" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-                                            <div class="item text-danger delete">
-                                                <i class="icon-trash-2"></i>
-                                            </div>
-                                        </form>
+{{--                                        <form action="{{route('admin.brand.delete', ['id'=>$brand->id])}}" method="POST">--}}
+{{--                                            @csrf--}}
+{{--                                            @method('DELETE')--}}
+{{--                                            <div class="item text-danger delete">--}}
+{{--                                                <i class="icon-trash-2"></i>--}}
+{{--                                            </div>--}}
+{{--                                        </form>--}}
 
                                     </div>
                                 </td>

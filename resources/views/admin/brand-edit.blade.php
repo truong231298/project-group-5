@@ -65,8 +65,8 @@
                                 </label>
                             </div>
                         </div>
+                        @error('image') <span class="alert alert-danger text-center">{{$message}}</span> @enderror
                     </fieldset>
-                    @error('image') <span class="alert alert-danger text-center">{{$message}}</span> @enderror
 
                     <div class="bot">
                         <div></div>
