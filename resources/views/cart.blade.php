@@ -81,7 +81,8 @@
                                             <form method="POST" action="{{route('cart.qty.increase', ['rowId'=>$item->rowId])}}">
                                                 @csrf
                                                 @method('PUT')
-                                                <div class="qty-control__increase">+</div>
+                                                <button type="submit" class="qty-control__increase"
+                                                    {{ $item->qty >= $item->model->quantity ? 'disabled' : '' }}>+</button>
                                             </form>
 
                                         </div>

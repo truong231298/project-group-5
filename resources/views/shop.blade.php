@@ -185,7 +185,7 @@
                         <div id="accordion-filter-price" class="accordion-collapse collapse show border-0"
                              aria-labelledby="accordion-heading-price" data-bs-parent="#price-filters">
                             <input class="price-range-slider" type="text" name="price_range" value="" data-slider-min="10"
-                                   data-slider-max="10000" data-slider-step="5" data-slider-value="[{{$min_price}}, {{$max_price}}]" data-currency="$" />
+                                   data-slider-max="500" data-slider-step="5" data-slider-value="[{{$min_price}}, {{$max_price}}]" data-currency="$" />
                             <div class="price-range__info d-flex align-items-center mt-2">
                                 <div class="me-auto">
                                     <span class="text-secondary">Min Price: </span>
@@ -193,7 +193,7 @@
                                 </div>
                                 <div>
                                     <span class="text-secondary">Max Price: </span>
-                                    <span class="price-range__max">$10000</span>
+                                    <span class="price-range__max">$500</span>
                                 </div>
                             </div>
                         </div>
@@ -366,7 +366,7 @@
                                         <input type="hidden" name="id" value="{{$product->id}}"/>
                                         <input type="hidden" name="quantity" value="1"/>
                                         <input type="hidden" name="name" value="{{$product->name}}"/>
-                                        <input type="hidden" name="price" value="{{$product->sale_price = '' ? $product->regular_price : $product->sale_price}}"/>
+                                        <input type="hidden" name="price" value="{{ $product->sale_price === null ? $product->regular_price : $product->sale_price }}"/>
                                         <button
                                             type="submit"
                                             class="pc__atc btn anim_appear-bottom btn position-absolute border-0 text-uppercase fw-medium"
@@ -427,7 +427,7 @@
                                     @csrf
                                     <input type="hidden" name="id" value="{{$product->id}}"/>
                                     <input type="hidden" name="name" value="{{$product->name}}"/>
-                                    <input type="hidden" name="price" value="{{$product->sale_price = "" ? $product->regular_price : $product->sale_price}}"/>
+                                    <input type="hidden" name="price" value="{{ $product->sale_price == null ? $product->regular_price : $product->sale_price }}"/>
                                     <input type="hidden" name="quantity" value="1"/>
 
                                     <button type="submit" class="pc__btn-wl position-absolute top-0 end-0 bg-transparent border-0 js-add-wishlist"

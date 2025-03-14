@@ -272,7 +272,7 @@
                     var options = {
                         series: [{
                             name: 'Total',
-                        data: [{{$AmountM}}]
+                            data: [{{$AmountM}}]
                         }, {
                             name: 'Pending',
                             data: [{{$OrderedAmountM}}]
@@ -342,12 +342,14 @@
 
                 /* Function ============ */
                 return {
-                    init: function () { },
+                    init: function () {
+                    },
 
                     load: function () {
                         chartBar();
                     },
-                    resize: function () { },
+                    resize: function () {
+                    },
                 };
             })();
 

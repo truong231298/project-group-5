@@ -193,7 +193,6 @@
                             <div class="select mb-10">
                                 <select class="" name="stock_status">
                                     <option value="instock">InStock</option>
-                                    <option value="outofstock">Out of Stock</option>
                                 </select>
                             </div>
                         </fieldset>

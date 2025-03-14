@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Slide;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Rules\EnglishWord;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -319,24 +320,38 @@ class AdminController extends Controller
     public function product_store(Request $request)
     {
         $request->validate([
-            'name'=>'required',
+            'name' => [
+                'required',
+                'string',
+                'min:3',
+                'max:50',
+                'regex:/^(?!\d+$)(?!.*[\s-]{2,})[a-zA-Z0-9\s\-]{3,50}$/',
+                new EnglishWord() // Custom validation rule
+            ],
             'slug'=>'required|unique:products,slug',
             'short_description'=>'required',
             'description'=>'required',
-            'regular_price' => 'required|numeric|min:0.01',
+            'regular_price' => 'required|numeric|min:0.01|max:500',
             'sale_price' => 'nullable|numeric|gt:0|lt:regular_price', // Must be > 0 and < regular_price
             'SKU'=>'required',
             'stock_status'=>'required',
             'featured'=>'required',
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:1|max:100',
             'category_id'=>'required',
             'brand_id'=>'required',
             'image'=>'required|mimes:jpeg,png,jpg|max:2048'
         ],[
+            'name.required' => 'Product name is required.',
+            'name.string' => 'Product name must be a string.',
+            'name.min' => 'Product name must be at least 3 characters.',
+            'name.max' => 'Product name cannot be more than 50 characters.',
+            'name.regex' => 'Product name can only contain letters, numbers, spaces, and hyphens.',
             'regular_price.min' => 'The regular price must be greater than 0.',
+            'regular_price.max' => 'The regular price must limit 500$.',
             'sale_price.gt' => 'The sale price must be greater than 0.',
             'sale_price.lt' => 'The sale price must be lower than the regular price.',
             'quantity.min' => 'The quantity must be at least 1.',
+            'quantity.max' => 'The quantity must be limit 100.',
         ]);
         $product = new Product();
         $product->name = $request->name;
@@ -402,19 +417,38 @@ class AdminController extends Controller
     public function product_update(Request $request, $id)
     {
         $request->validate([
-            'name' => 'required',
-            'slug' => 'required|unique:products,slug,' . $id,
-            'short_description' => 'required',
-            'description' => 'required',
-            'regular_price' => 'required|numeric|min:0.01',
-            'sale_price' => 'nullable|numeric|gt:0|lt:regular_price',
-            'SKU' => 'required',
-            'stock_status' => 'required',
-            'featured' => 'required',
-            'quantity' => 'required|integer|min:1',
-            'category_id' => 'required',
-            'brand_id' => 'required',
-            'image' => 'nullable|mimes:jpeg,png,jpg|max:2048'
+            'name' => [
+                'required',
+                'string',
+                'min:3',
+                'max:50',
+                'regex:/^(?!\d+$)(?!.*[\s-]{2,})[a-zA-Z0-9\s\-]{3,50}$/',
+                new EnglishWord() // Custom validation rule
+            ],
+            'slug'=>'required|unique:products,slug',
+            'short_description'=>'required',
+            'description'=>'required',
+            'regular_price' => 'required|numeric|min:0.01|max:500',
+            'sale_price' => 'nullable|numeric|gt:0|lt:regular_price', // Must be > 0 and < regular_price
+            'SKU'=>'required',
+            'stock_status'=>'required',
+            'featured'=>'required',
+            'quantity' => 'required|integer|min:1|max:100',
+            'category_id'=>'required',
+            'brand_id'=>'required',
+            'image'=>'required|mimes:jpeg,png,jpg|max:2048'
+        ],[
+            'name.required' => 'Product name is required.',
+            'name.string' => 'Product name must be a string.',
+            'name.min' => 'Product name must be at least 3 characters.',
+            'name.max' => 'Product name cannot be more than 50 characters.',
+            'name.regex' => 'Product name can only contain letters, numbers, spaces, and hyphens.',
+            'regular_price.min' => 'The regular price must be greater than 0.',
+            'regular_price.max' => 'The regular price must limit 500$.',
+            'sale_price.gt' => 'The sale price must be greater than 0.',
+            'sale_price.lt' => 'The sale price must be lower than the regular price.',
+            'quantity.min' => 'The quantity must be at least 1.',
+            'quantity.max' => 'The quantity must be limit 100.',
         ]);
 
         $product = Product::findOrFail($id);
@@ -479,11 +513,24 @@ class AdminController extends Controller
 
     public function coupon_store(Request $request){
         $request->validate([
-            'code'=>'required',
-            'type'=>'required',
-            'value'=>'required|numeric',
-            'cart_value'=>'required|numeric',
-            'expiry_date'=>'required|date',
+            'code' => 'required|string|unique:coupons,code|max:20',
+            'type' => 'required|in:fixed,percent',
+            'value' => [
+                'required',
+                'numeric',
+                'min:0.01',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->type === 'percent' && $value > 100) {
+                        $fail('Percentage discount cannot exceed 100%.');
+                    }
+                    if ($request->type === 'fixed' && $value > 1000) {
+                        $fail('Fixed discount cannot exceed $1000.');
+                    }
+                },
+            ],
+            'code.unique' => 'The coupon code already exists. Please use a different code.',
+            'cart_value' => 'required|numeric|min:0|max:10000',
+            'expiry_date' => 'required|date|after:today',
         ]);
         $coupon = new Coupon();
         $coupon->code = $request->code;
@@ -504,11 +551,24 @@ class AdminController extends Controller
     public function coupon_update(Request $request)
     {
         $request->validate([
-            'code'=>'required',
-            'type'=>'required',
-            'value'=>'required|numeric',
-            'cart_value'=>'required|numeric',
-            'expiry_date'=>'required|date',
+            'code' => 'required|string|unique:coupons,code|max:20',
+            'type' => 'required|in:fixed,percent',
+            'value' => [
+                'required',
+                'numeric',
+                'min:0.01',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->type === 'percent' && $value > 100) {
+                        $fail('Percentage discount cannot exceed 100%.');
+                    }
+                    if ($request->type === 'fixed' && $value > 1000) {
+                        $fail('Fixed discount cannot exceed $1000.');
+                    }
+                },
+            ],
+            'code.unique' => 'The coupon code already exists. Please use a different code.',
+            'cart_value' => 'required|numeric|min:0|max:10000',
+            'expiry_date' => 'required|date|after:today',
         ]);
         $coupon = Coupon::find($request->id);
         $coupon->code = $request->code;

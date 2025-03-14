@@ -360,6 +360,7 @@
     <script src="{{asset('js/bootstrap-select.min.js')}}"></script>
     <script src="{{asset('js/sweetalert.min.js')}}"></script>
     <script src="{{asset('js/apexcharts/apexcharts.js')}}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
         $(function () {
             $('#search-input').on("input", function () {

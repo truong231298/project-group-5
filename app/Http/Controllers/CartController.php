@@ -75,26 +75,37 @@ class CartController extends Controller
     }
 
     public function calculateDiscount(){
-        $discount = 0;
-        if(Session::has('coupon')){
-            if(Session::get('coupon')['type'] == 'fixed'){
-                $discount = Session::get('coupon')['value'];
-            }else{
-                $discount = (Cart::instance('cart')->subtotal() * Session::get('coupon')['value'])/100;
-            }
-
-            $subtotalAfterDiscount = Cart::instance('cart')->subtotal() - $discount;
-            $taxAfterDiscount = ($subtotalAfterDiscount * config('cart.tax') / 100);
-            $totalAfterDiscount = $subtotalAfterDiscount + $taxAfterDiscount;
-
-            Session::put('discounts', [
-               'discount' => number_format(floatval($discount), 2, '.', ''),
-                'subtotal' => number_format(floatval($subtotalAfterDiscount), 2, '.', ''),
-                'tax' => number_format(floatval($taxAfterDiscount), 2, '.', ''),
-                'total' => number_format(floatval($totalAfterDiscount), 2, '.', '')
-            ]);
+        if (!Session::has('coupon') || !Session::has('coupon.type') || !Session::has('coupon.value')) {
+            return;
         }
+
+        $cartSubtotal = Cart::instance('cart')->subtotal();
+        if ($cartSubtotal <= 0) {
+            return;
+        }
+
+        $coupon = Session::get('coupon');
+        $discount = 0;
+
+        if ($coupon['type'] == 'fixed') {
+            $discount = floatval($coupon['value']);
+        } else { // Percentage discount
+            $discount = ($cartSubtotal * floatval($coupon['value'])) / 100;
+        }
+
+        $subtotalAfterDiscount = max(0, $cartSubtotal - $discount); // Ensure no negative subtotal
+        $taxRate = floatval(config('cart.tax', 10)); // Default tax to 10% if missing
+        $taxAfterDiscount = ($subtotalAfterDiscount * $taxRate) / 100;
+        $totalAfterDiscount = $subtotalAfterDiscount + $taxAfterDiscount;
+
+        Session::put('discounts', [
+            'discount' => number_format($discount, 2, '.', ''),
+            'subtotal' => number_format($subtotalAfterDiscount, 2, '.', ''),
+            'tax' => number_format($taxAfterDiscount, 2, '.', ''),
+            'total' => number_format($totalAfterDiscount, 2, '.', '')
+        ]);
     }
+
 
     public function remove_coupon_code(){
         Session::forget('coupon');
@@ -171,33 +182,33 @@ class CartController extends Controller
             $orderItem->save();
         }
 
-    if($request->mode == "card"){
+        if($request->mode == "card"){
             // Set your Stripe secret key
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
-        try {
-            // Create a PaymentIntent with the order total (converted to cents)
-            $paymentIntent = \Stripe\PaymentIntent::create([
-                'amount' => Session::get('checkout')['total'] * 100, // amount in cents
-                'currency' => env('CURRENCY', 'usd'),
-                'metadata' => [
-                    'order_id' => $order->id,
-                ],
-            ]);
+            try {
+                // Create a PaymentIntent with the order total (converted to cents)
+                $paymentIntent = \Stripe\PaymentIntent::create([
+                    'amount' => Session::get('checkout')['total'] * 100, // amount in cents
+                    'currency' => env('CURRENCY', 'usd'),
+                    'metadata' => [
+                        'order_id' => $order->id,
+                    ],
+                ]);
 
-            // Pass the PaymentIntent's client secret to the view
-            return view('payments.card', [
-                'clientSecret' => $paymentIntent->client_secret,
-                'order' => $order,
-            ]);
-        } catch (\Exception $e) {
-            // Handle any errors from Stripe
-            return redirect()->route('cart.order.confirmation')
-                ->with('error', 'Error processing payment: ' . $e->getMessage());
+                // Pass the PaymentIntent's client secret to the view
+                return view('payments.card', [
+                    'clientSecret' => $paymentIntent->client_secret,
+                    'order' => $order,
+                ]);
+            } catch (\Exception $e) {
+                // Handle any errors from Stripe
+                return redirect()->route('cart.order.confirmation')
+                    ->with('error', 'Error processing payment: ' . $e->getMessage());
+            }
         }
-    }
 
-    elseif($request->mode == "paypal"){
+        elseif($request->mode == "paypal"){
             // Create an instance of the PayPal client
             $provider = new PayPal();
 
@@ -266,7 +277,7 @@ class CartController extends Controller
 
         if(Session::has('coupon')){
             Session::put('checkout', [
-               'discount' => Session::get('discounts')['discount'],
+                'discount' => Session::get('discounts')['discount'],
                 'subtotal' => Session::get('discounts')['subtotal'],
                 'tax' => Session::get('discounts')['tax'],
                 'total' => Session::get('discounts')['total']
